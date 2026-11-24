@@ -111,22 +111,25 @@ def submit(request, course_id):
     choices = extract_answers(request)
     submission.choices.set(choices)
     submission_id = submission.id
-    return HttpResponseRedirect(reverse(viewname='onlinecourse:exam_result', args=(course_id, submission_id,)))
-    
+    return HttpResponseRedirect(reverse(viewname='onlinecourse:show_exam_result', args=(course_id, submission_id,)))
+
+
 def extract_answers(request):
-    submitted_anwsers = []
+    submitted_answers = []
     for key in request.POST:
         if key.startswith('choice'):
             value = request.POST[key]
             choice_id = int(value)
-            submitted_anwsers.append(choice_id)
-    return submitted_anwsers
+            submitted_answers.append(choice_id)
+    return submitted_answers
+
 
 def show_exam_result(request, course_id, submission_id):
     context = {}
     course = get_object_or_404(Course, pk=course_id)
     submission = Submission.objects.get(id=submission_id)
     choices = submission.choices.all()
+    selected_ids = [choice.id for choice in choices]
     total_score = 0
     questions = course.question_set.all()
 
@@ -135,7 +138,9 @@ def show_exam_result(request, course_id, submission_id):
         selected_choices = choices.filter(question=question)
         if set(correct_choices) == set(selected_choices):
             total_score += question.grade
+
     context['course'] = course
     context['grade'] = total_score
+    context['selected_ids'] = selected_ids
     context['choices'] = choices
     return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
